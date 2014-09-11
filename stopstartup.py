@@ -1,15 +1,19 @@
 """
-Stop most services from starting for a time
+Stop most services from starting
+================================
 
-Some Debian package installs automatically launch an instance, and sometimes
-you don't want that to happen immediately. `stopstartup`, when activated, will
-stop any service started via invoke-rc.d from starting. It does this by
-hijacking /usr/sbin/policy-rc.d, which invoke-rc.d calls for every service.
-Normally the file should determine if your currently active "policy" (whatever
-that means) should allow the service to startup. The policy enforcer installed
-by `stopstartup` is much less nice, and simply rejects any request.
+Some Debian package installs automatically launch a daemon, and sometimes you
+don't want that to happen immediately. :code:`stopstartup`, when activated,
+will stop any service started via :code:`invoke-rc.d` from starting. It does
+this by hijacking :code:`/usr/sbin/policy-rc.d`, which :code:`invoke-rc.d`
+calls for every service.  Normally the file should determine if your currently
+active "policy" (whatever that means) should allow the service to startup. The
+policy enforcer installed by :code:`stopstartup` is much less nice, and simply
+rejects any request.
 
-http://serverfault.com/questions/567474/how-can-i-install-packages-without-starting-their-associated-services
+The policy is installed at :code:`usr/sbin/`, so if you don't have proper
+permissions there you'll be unable to run :code:`stopstartup`. If that happens,
+try using :code:`sudo`.
 """
 from click import group, echo, style, pass_context, make_pass_decorator
 from collections import namedtuple
