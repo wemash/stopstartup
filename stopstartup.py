@@ -56,7 +56,7 @@ def start(state):
     the sidelining process.
     """
     from os import symlink
-    from os.path import join, realpath
+    from os.path import join
     from shutil import move
     source = join(state.home, "policy-rc.d")
     destination = join(state.install_dir, "policy-rc.d")
@@ -71,10 +71,24 @@ def start(state):
     
 
 @cli.command()
-def stop():
+@pass_state
+def stop(state):
     """Stop stopping services from starting..."""
-    echo("Allowing services to start once again...")
-
+    from os.path import join
+    from os import remove
+    from shutil import move
+    original = join(state.home, "policy-rc.d")
+    policy = join(state.install_dir, "policy-rc.d")
+    sideline = join(state.install_dir, "policy-rc.d.sidelined")
+    if not exists(policy):
+        echo("Negative policy enforcement has already stopped!")
+        return
+    if not are_the_same(original, policy):
+        return
+    if exists(policy):
+        remove(policy)
+    if exists(sideline):
+        move(sideline, policy)
 
 if __name__ == "__main__":
     cli()
