@@ -10,7 +10,7 @@ setup(
     long_description = readme(),
     keywords = "stop services debian install",
     url = "https://github.com/wemash/stopstartup",
-    version = "1.0.0",
+    version = "1.0.1",
 
     author = "Kenneth Pullen",
     author_email = "ken@mash.is",
