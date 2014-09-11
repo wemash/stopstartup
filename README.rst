@@ -23,7 +23,7 @@ Installing
     pip install git+https://github.com/wemash/stopstartup
 
     # Install from a local copy of the repo
-    # This is super handy if you want to work on stopstartup, and want to run some integration tests
+    # This is super handy if you want to work on stopstartup
     git clone https://github.com/wemash/stopstartup
     cd stopstartup
     pip install --editable .
