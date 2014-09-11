@@ -11,15 +11,16 @@ by `stopstartup` is much less nice, and simply rejects any request.
 
 http://serverfault.com/questions/567474/how-can-i-install-packages-without-starting-their-associated-services
 """
-from click import group, echo, pass_context, make_pass_decorator
+from click import group, echo, style, pass_context, make_pass_decorator
 from collections import namedtuple
 
 
 State = namedtuple("State", ("home", "install_dir"))
-pass_state = make_pass_decorator(State, ensure = True)
+pass_state = make_pass_decorator(State)
 
 @group()
-def cli():
+@pass_context
+def cli(ctx):
     """
     Packages that install a service and then automatically execute it are
     annoying. Why deal with it? Why not just take advantage of the fact that
@@ -33,7 +34,9 @@ def cli():
     Calling stop will remove the custom enforcer, and will put your old
     enforcer back in place, assuming you had one.
     """
-    pass
+    from os import getcwd
+    from os.path import join
+    ctx.obj = State(getcwd(), join("/", "usr", "sbin"))
 
 def exists(path):
     """
@@ -53,11 +56,33 @@ def are_the_same(first, second):
     from os.path import realpath
     return realpath(first) == realpath(second)
 
+def broken():
+    echo(style("BROKEN!", fg = "white", bg = "red", blink = True))
+
+def active():
+    echo(style("ACTIVE", fg = "red", blink = True))
+
+def inactive():
+    echo(style("INACTIVE", fg = "green", blink = True))
+
+def require_elevated_privileges(f):
+    from functools import update_wrapper
+    @pass_context
+    def new_func(context, *args, **kwargs):
+        try:
+            return context.invoke(f, *args, **kwargs)
+        except (OSError, IOError):
+            echo(style("ELEVATE ME", fg = "cyan", blink = True))
+            echo("Try using sudo")
+            exit(1)
+    return update_wrapper(new_func, f)
+
 @cli.command()
+@require_elevated_privileges
 @pass_state
 def start(state):
     """
-    Start stopping services from starting...
+    Start stopping services from starting.
 
     Any existing policy enforcer will be sidelined. You must call stop to undo
     the sidelining. It is also not recommended that you manually replace the
@@ -73,18 +98,18 @@ def start(state):
     sideline = join(state.install_dir, "policy-rc.d.sidelined")
     if are_the_same(source, destination):
         echo("Stopping has already been started!")
-        return
+        exit(1)
     if exists(destination):
-        echo("A policy enforcer existed, and was sidelined")
         move(destination, sideline)
+        echo("A policy enforcer existed, and was sidelined")
     symlink(source, destination)
-    
 
 @cli.command()
+@require_elevated_privileges
 @pass_state
 def stop(state):
     """
-    Stop stopping services from starting...
+    Stop stopping services from starting.
 
     All services launched via invoke-rc.d will be denied the chance to startup
     once you call start, and they'll continue being denied until you call stop.
@@ -99,13 +124,54 @@ def stop(state):
     sideline = join(state.install_dir, "policy-rc.d.sidelined")
     if not exists(policy):
         echo("Negative policy enforcement has already stopped!")
-        return
+        exit(0)
     if not are_the_same(original, policy):
-        return
+        if exists(sideline):
+            broken()
+            echo("A sideline AND third party policy enforcer exist!")
+            echo("Please review both policy enforcers and remove one before calling stop again")
+            echo("The current sidelined policy enforcer will be overwritten if you call start")
+            exit(1)
+        else:
+            echo("A third party policy enforcer is already active!")
+            exit(1)
     if exists(policy):
         remove(policy)
     if exists(sideline):
         move(sideline, policy)
+
+@cli.command()
+@pass_state
+def status(state):
+    """Determine the status of policy enforcement."""
+    from os.path import join
+    original = join(state.home, "policy-rc.d")
+    policy = join(state.install_dir, "policy-rc.d")
+    sideline = join(state.install_dir, "policy-rc.d.sidelined")
+    if exists(sideline):
+        if not exists(policy):
+            broken()
+            echo("A sidelined policy enforcer exists, but no active policy enforcer")
+            echo("Try moving the sidelined enforcer back into place")
+            exit(1)
+    if exists(policy):
+        if are_the_same(original, policy):
+            active()
+            echo("Policy enforcement is active")
+            exit(0)
+        else:
+            if exists(sideline):
+                broken()
+                echo("A sidelined AND third party policy enforcer exist!")
+                echo("The current sidelined policy enforcer will be overwritten if you call start")
+                exit(1)
+            inactive()
+            echo("Third party policy enforcement is active")
+            exit(0)
+    else:
+        inactive()
+        echo("No policy enforcement is active")
+
 
 if __name__ == "__main__":
     cli()
