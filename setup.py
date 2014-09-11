@@ -1,4 +1,5 @@
 from setuptools import setup
+from os.path import join
 
 def readme():
     return open("README.rst").read()
@@ -17,5 +18,5 @@ setup(
     py_modules = ["stopstartup"],
     install_requires = ["Click"],
     entry_points = {"console_scripts": ["stopstartup = stopstartup:cli"]},
-    include_package_data = True
+    data_files = [(join("/", "usr", "local", "stopstartup"), ["policy-rc.d"])],
 )

@@ -38,9 +38,10 @@ def cli(ctx):
     Calling stop will remove the custom enforcer, and will put your old
     enforcer back in place, assuming you had one.
     """
-    from os import getcwd
     from os.path import join
-    ctx.obj = State(getcwd(), join("/", "usr", "sbin"))
+    home = join("/", "usr", "local", "stopstartup")
+    install_dir = join("/", "usr", "sbin")
+    ctx.obj = State(home, install_dir)
 
 def exists(path):
     """
