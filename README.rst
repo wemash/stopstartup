@@ -28,6 +28,9 @@ Installing
     cd stopstartup
     pip install --editable .
 
+    # RECOMMENDED: Install through pip
+    pip install stopstartup
+
 Ensuring that this actually works
 ---------------------------------
 
